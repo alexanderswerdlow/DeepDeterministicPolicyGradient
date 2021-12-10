@@ -18,9 +18,7 @@ In order to determine how our <img alt="Q_\theta(s,a)" src="https://render.githu
 
 We previously saw that we could find an optimal policy <img alt="\pi^*(s)" src="https://render.githubusercontent.com/render/math?math=%5Cpi%5E%2a%28s%29" style="transform: translateY(20%);" /> from the optimal Q-function <img alt="Q^*(s,a)" src="https://render.githubusercontent.com/render/math?math=Q%5E%2a%28s%2Ca%29" style="transform: translateY(20%);" /> and here our goal is the same. Thus we can define the gradient of our objective as
 
-<p align="center"><img alt="
-\grad L(\theta_\pi)=E_{d\sim D}\bigg[\grad_{\theta_\pi} Q_\theta(s,\pi_\theta(s))\bigg]=E_{d\sim D}\bigg[\grad_{\pi_\theta(s)} Q_\theta(s,\pi_\theta(s)) \grad_{\theta_\pi} \pi_{\theta_\pi}(s)\bigg]
-" src="https://render.githubusercontent.com/render/math?math=%0A%5Cgrad%20L%28%5Ctheta_%5Cpi%29%3DE_%7Bd%5Csim%20D%7D%5Cbigg%5B%5Cgrad_%7B%5Ctheta_%5Cpi%7D%20Q_%5Ctheta%28s%2C%5Cpi_%5Ctheta%28s%29%29%5Cbigg%5D%3DE_%7Bd%5Csim%20D%7D%5Cbigg%5B%5Cgrad_%7B%5Cpi_%5Ctheta%28s%29%7D%20Q_%5Ctheta%28s%2C%5Cpi_%5Ctheta%28s%29%29%20%5Cgrad_%7B%5Ctheta_%5Cpi%7D%20%5Cpi_%7B%5Ctheta_%5Cpi%7D%28s%29%5Cbigg%5D%0A"/></p>
+<img alt="\nabla L(\theta_\pi)=E_{d\sim D}\bigg[\nabla{\theta_\pi} Q_\theta(s,\pi_\theta(s))\bigg]=E_{d\sim D}\bigg[\nabla{\pi_\theta(s)} Q_\theta(s,\pi_\theta(s)) \nabla{\theta_\pi} \pi_{\theta_\pi}(s)\bigg]" src="https://render.githubusercontent.com/render/math?math=%5Cnabla%20L%28%5Ctheta_%5Cpi%29%3DE_%7Bd%5Csim%20D%7D%5Cbigg%5B%5Cnabla%7B%5Ctheta_%5Cpi%7D%20Q_%5Ctheta%28s%2C%5Cpi_%5Ctheta%28s%29%29%5Cbigg%5D%3DE_%7Bd%5Csim%20D%7D%5Cbigg%5B%5Cnabla%7B%5Cpi_%5Ctheta%28s%29%7D%20Q_%5Ctheta%28s%2C%5Cpi_%5Ctheta%28s%29%29%20%5Cnabla%7B%5Ctheta_%5Cpi%7D%20%5Cpi_%7B%5Ctheta_%5Cpi%7D%28s%29%5Cbigg%5D" style="transform: translateY(20%);" />
 
 where <img alt="\theta_\pi" src="https://render.githubusercontent.com/render/math?math=%5Ctheta_%5Cpi" style="transform: translateY(20%);" /> denotes the function parameters of the actor specifically.
 
