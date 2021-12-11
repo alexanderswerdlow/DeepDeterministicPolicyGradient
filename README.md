@@ -1,5 +1,27 @@
 # Deep Deterministic Policy Gradient
 
+Application of a Deep Deterministic Policy Gradient (DDPG) method introduced in [1] to control a rocket with noisy thrust and an off-center mass.
+
+[1] Lillicrap, Timothy P., et al. "Continuous control with deep reinforcement learning." arXiv preprint arXiv:1509.02971 (2015).
+
+## Dependencies
+
+Before running the project, you’ll need the following installed:
+* [Open AI Gym](https://github.com/openai/gym)
+* [PyTorch](https://pytorch.org/get-started/locally/)
+* [matplotlib](https://pypi.org/project/matplotlib/)
+* [mujoco-py](https://github.com/openai/mujoco-py)
+* [Mujoco](https://mujoco.org/download)
+For best performance, it is recommended that you use an Nvidia GPU with CUDA installed. This should be possible on both Linux and Windows but only Linux was tested. You should be able to run the code without a GPU, however this is untested.
+
+Specifically, this project has been tested with Ubuntu 20.04 w/CUDA 11.3 drivers and an RTX 2060. The python enviorment was a vanilla system install with version 3.8.10 with `gym=0.19.0`, `torch=1.10.0+cu113`, `mujoco-py=2.1.2.14` and Mujoco v2.10.
+
+Additionally, [stable-baselines3](https://github.com/DLR-RM/stable-baselines3.git) was used during development for validation and can optionally be installed with instructions found [here](https://stable-baselines3.readthedocs.io/en/master/guide/install.html).
+
+*Additionally, [markdown-math-gh-compiler](https://github.com/jeremy-rifkin/markdown-math-gh-compiler) was used to embed latex formulae in this README.
+
+## DDPG
+
 The goal is to develop a policy that returns an action in some continuous space. As the name entails, this policy is deterministic, thus creating a mapping from state to action: <img alt="\pi^*(s)=a" src="https://render.githubusercontent.com/render/math?math=%5Cpi%5E%2a%28s%29%3Da" style="transform: translateY(20%);" />
 
 We do this with an off-policy approach with an actor-critic structure. We create an actor <img alt="\pi_\theta(s)" src="https://render.githubusercontent.com/render/math?math=%5Cpi_%5Ctheta%28s%29" style="transform: translateY(20%);" /> that represents our policy and a critic <img alt="Q_\theta(s, a)" src="https://render.githubusercontent.com/render/math?math=Q_%5Ctheta%28s%2C%20a%29" style="transform: translateY(20%);" /> that learns the Q-function.

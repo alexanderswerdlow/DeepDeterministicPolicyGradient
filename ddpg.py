@@ -79,7 +79,7 @@ class DDPG(object):
         self.env = env
         self.n_states = self.env.observation_space.shape[-1]
         self.n_actions = self.env.action_space.shape[-1]
-        self.device = torch.device("cuda")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         torch.manual_seed(1)
         torch.cuda.manual_seed(1)
 
@@ -97,7 +97,7 @@ class DDPG(object):
         self.low_action_bounds = torch.from_numpy(self.env.action_space.low).cuda()
         self.high_action_bounds = torch.from_numpy(self.env.action_space.high).cuda()
 
-        self.num_episodes = 1000
+        self.num_episodes = 100000
         self.tau = 0.995
         self.gamma = 0.99
         self.replay_buffer = deque(maxlen=1000000)
@@ -120,7 +120,7 @@ class DDPG(object):
             pass
 
     def policy_inference(self, state):
-        return self.actor(torch.from_numpy(state).float().cuda())
+        return self.actor(torch.from_numpy(state).float().to(self.device))
 
     def sample_batch(self, batch_size):
         states, actions, rewards, next_states, dones = zip(*random.sample(self.replay_buffer, min(batch_size, len(self.replay_buffer))))
@@ -128,9 +128,9 @@ class DDPG(object):
 
     def sample_action(self, state):
         if len(self.replay_buffer) >= self.uniform_action_transitions:
-            state = self.actor(torch.from_numpy(state).float().cuda()) + torch.from_numpy(np.array(self.random_noise())).cuda()
+            state = self.actor(torch.from_numpy(state).float().to(self.device)) + torch.from_numpy(np.array(self.random_noise())).to(self.device)
         else:
-            state = torch.distributions.uniform.Uniform(self.low_action_bounds, self.high_action_bounds).sample().cuda()
+            state = torch.distributions.uniform.Uniform(self.low_action_bounds, self.high_action_bounds).sample().to(self.device)
 
         return torch.clamp(state, min=self.low_action_bounds, max=self.high_action_bounds).cpu()
 
@@ -164,7 +164,7 @@ class DDPG(object):
 
                 if len(self.replay_buffer) >= self.bypass_network_update_transitions:
                     # Sample N transitions (minibatch) from replay buffer
-                    states, actions, rewards, next_states, dones = self.sample_batch(1000000)
+                    states, actions, rewards, next_states, dones = self.sample_batch(100000)
 
                     # Compute Q_target, Q_predicted
                     Q_target = rewards + self.gamma * dones * torch.squeeze(self.target_critic(next_states, self.target_actor(next_states)))

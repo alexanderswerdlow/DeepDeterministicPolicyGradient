@@ -1,9 +1,6 @@
 import gym
 import rocket
-from stable_baselines3 import A2C, DDPG
-from stable_baselines3.common.env_checker import check_env
-from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
-from stable_baselines3.common.vec_env import DummyVecEnv, VecCheckNan
+from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3 import TD3
 
 import numpy as np
@@ -16,8 +13,6 @@ action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.2 * np.ones(n
 import matplotlib.pyplot as plt
 
 from stable_baselines3.common.callbacks import BaseCallback
-from stable_baselines3.common.logger import Figure
-from stable_baselines3.common.logger import TensorBoardOutputFormat
 
 class SummaryWriterCallback(BaseCallback):
 
