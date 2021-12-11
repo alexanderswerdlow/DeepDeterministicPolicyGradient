@@ -38,13 +38,14 @@ class OUActionNoise:
 
 # Actor approximates some policy Pi(state)
 class Actor(nn.Module):
-    def __init__(self, n_states, n_actions):
+    def __init__(self, n_states, n_actions, high_action_bounds):
         super(Actor, self).__init__()
         self.fc1 = nn.Linear(n_states, 400)
         self.fc2 = nn.Linear(400, 300)
         self.fc3 = nn.Linear(300, n_actions)
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
+        self.high_action_bounds = high_action_bounds
 
     def forward(self, state):
         output = self.fc1(state)
@@ -53,22 +54,22 @@ class Actor(nn.Module):
         output = self.relu(output)
         output = self.fc3(output)
         output = self.tanh(output)
-        return output
+        return self.high_action_bounds * output
 
 
 # Critic approximates some Q-function Q(state, action)
 class Critic(nn.Module):
     def __init__(self, n_states, n_actions):
         super(Critic, self).__init__()
-        self.fc1 = nn.Linear(n_states + n_actions, 400)
-        self.fc2 = nn.Linear(400, 300)
+        self.fc1 = nn.Linear(n_states, 400)
+        self.fc2 = nn.Linear(400 + n_actions, 300)
         self.fc3 = nn.Linear(300, 1)
         self.relu = nn.ReLU()
 
     def forward(self, state, action):
-        output = self.fc1(torch.cat([state, action], 1))
+        output = self.fc1(state)
         output = self.relu(output)
-        output = self.fc2(output)
+        output = self.fc2(torch.cat([output, action], 1))
         output = self.relu(output)
         output = self.fc3(output)
         return output
@@ -79,30 +80,30 @@ class DDPG(object):
         self.env = env
         self.n_states = self.env.observation_space.shape[-1]
         self.n_actions = self.env.action_space.shape[-1]
+        self.low_action_bounds = torch.from_numpy(self.env.action_space.low).cuda()
+        self.high_action_bounds = torch.from_numpy(self.env.action_space.high).cuda()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         torch.manual_seed(1)
         torch.cuda.manual_seed(1)
 
-        self.actor = Actor(self.n_states, self.n_actions).to(self.device)
+        self.actor = Actor(self.n_states, self.n_actions, self.high_action_bounds).to(self.device)
         self.critic = Critic(self.n_states, self.n_actions).to(self.device)
 
         self.target_actor = deepcopy(self.actor).to(self.device)
         self.target_critic = deepcopy(self.critic).to(self.device)
 
-        self.actor_optim = Adam(self.actor.parameters(), lr=0.001)
-        self.critic_optim = Adam(self.critic.parameters(), lr=0.001)
+        self.actor_optim = Adam(self.actor.parameters(), lr=3e-4)
+        self.critic_optim = Adam(self.critic.parameters(), lr=3e-4)
         self.critic_loss = nn.MSELoss()
 
         self.random_noise = OUActionNoise(mean=np.zeros(self.n_actions), std_deviation=0.5)
-        self.low_action_bounds = torch.from_numpy(self.env.action_space.low).cuda()
-        self.high_action_bounds = torch.from_numpy(self.env.action_space.high).cuda()
-
-        self.num_episodes = 100000
+        
         self.tau = 0.995
         self.gamma = 0.99
         self.replay_buffer = deque(maxlen=1000000)
         self.uniform_action_transitions = 10000
         self.bypass_network_update_transitions = 1000
+        self.max_steps = 1e6
 
     def save_models(self):
         torch.save(self.critic.state_dict(), 'checkpoints/critic')
@@ -116,6 +117,8 @@ class DDPG(object):
             self.target_critic.load_state_dict(torch.load('checkpoints/target_critic'), self.device)
             self.actor.load_state_dict(torch.load('checkpoints/actor'), self.device)
             self.target_actor.load_state_dict(torch.load('checkpoints/target_actor'), self.device)
+            self.uniform_action_transitions = 0
+            self.bypass_network_update_transitions = 0
         except:
             pass
 
@@ -145,7 +148,11 @@ class DDPG(object):
 
     def train(self):
         episode_rewards = []
-        for i in range(self.num_episodes):
+        total_steps = 0
+        episode_number = 0
+        while total_steps < self.max_steps:
+
+            # Start new episode
             state = self.env.reset().astype(np.float32)
             episode_reward = 0
             episode_steps = 0
@@ -164,7 +171,7 @@ class DDPG(object):
 
                 if len(self.replay_buffer) >= self.bypass_network_update_transitions:
                     # Sample N transitions (minibatch) from replay buffer
-                    states, actions, rewards, next_states, dones = self.sample_batch(100000)
+                    states, actions, rewards, next_states, dones = self.sample_batch(256)
 
                     # Compute Q_target, Q_predicted
                     Q_target = rewards + self.gamma * dones * torch.squeeze(self.target_critic(next_states, self.target_actor(next_states)))
@@ -186,14 +193,16 @@ class DDPG(object):
                     self.update_target(self.target_critic, self.critic)
 
                 if done:
-                    episode_rewards.append(episode_reward)
-                    plt.plot(episode_rewards)
-                    plt.xlabel('Episode number')
-                    plt.ylabel('Episode reward')
-                    plt.savefig('reward.png')
-                    plt.clf()
-                    print(f'Episode {i} had reward: {episode_reward} with replay len: {len(self.replay_buffer)}')
+                    episode_rewards.append(episode_reward / episode_steps)
+                    print(f'Episode {episode_number} had reward: {episode_reward} with replay len: {len(self.replay_buffer)}')
 
-                    if i % 5 == 0:
+                    if episode_number % 5 == 0:
                         self.save_models()
+                        plt.plot(episode_rewards)
+                        plt.xlabel('Episode')
+                        plt.ylabel('Episode avg reward')
+                        plt.savefig('reward.png')
+                        plt.clf()
+
+                    episode_number += 1
                     break
