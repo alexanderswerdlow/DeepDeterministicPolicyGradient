@@ -197,7 +197,7 @@ class DDPG(object):
                     self.episode_rewards.append(episode_reward)
                     print(f'Episode {episode_number} had reward: {episode_reward} at {self.cur_steps} steps with replay len: {len(self.replay_buffer)}')
 
-                    if episode_number % 5 == 0:
+                    if episode_number % 10 == 0:
                         self.save_models()
                         plt.plot(self.episode_rewards)
                         plt.xlabel('Episode')
