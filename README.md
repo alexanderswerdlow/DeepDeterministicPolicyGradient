@@ -14,13 +14,15 @@ Before running the project, you’ll need the following installed:
 * [matplotlib](https://pypi.org/project/matplotlib/)
 * [mujoco-py](https://github.com/openai/mujoco-py)
 * [Mujoco](https://mujoco.org/download)
-Once the repository is cloned, run `pip install -e .` in the root directory to install the "rocket" package which contains the custom rocket enviorment for gym. This is necessary for the simulations to run.
+Once the repository is cloned, run `pip install -e . && pip install scipy` in the root directory to install the "rocket" package which contains the custom rocket enviorment for gym and scipy. This is necessary for the simulations to run.
+
+You will also need to run the following on Ubuntu: `sudo apt-get install libglew-dev libx11-dev patchelf`
 
 For best performance, it is recommended that you use an Nvidia GPU with CUDA installed. This should be possible on both Linux and Windows but only Linux was tested. You should be able to run the code without a GPU, however this is untested.
 
 Specifically, this project has been tested with Ubuntu 20.04 w/CUDA 11.3 drivers and an RTX 2060. The python enviorment was a vanilla system install with version 3.8.10 with `gym=0.19.0`, `torch=1.10.0+cu113`, `mujoco-py=2.1.2.14` and Mujoco v2.10.
 
-Additionally, [stable-baselines3](https://github.com/DLR-RM/stable-baselines3.git) was used during development for validation and can optionally be installed with instructions found [here](https://stable-baselines3.readthedocs.io/en/master/guide/install.html).
+To run the enviorment, you must also change the absolute path on line 64 of rocket/envs/rocket_v2.py.
 
 *Additionally, [markdown-math-gh-compiler](https://github.com/jeremy-rifkin/markdown-math-gh-compiler) was used to embed latex formulae in this README.
 

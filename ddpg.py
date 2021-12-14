@@ -103,13 +103,16 @@ class DDPG(object):
         self.replay_buffer = deque(maxlen=1000000)
         self.uniform_action_transitions = 10000
         self.bypass_network_update_transitions = 1000
-        self.max_steps = 1e6
+        self.max_steps = 2e6
+        self.cur_steps = 0
+        self.episode_rewards = []
 
     def save_models(self):
         torch.save(self.critic.state_dict(), 'checkpoints/critic')
         torch.save(self.target_critic.state_dict(), 'checkpoints/target_critic')
         torch.save(self.actor.state_dict(), 'checkpoints/actor')
         torch.save(self.target_actor.state_dict(), 'checkpoints/target_actor')
+        torch.save((self.replay_buffer, self.cur_steps, self.random_noise, self.episode_rewards), 'checkpoints/replay_buffer')
 
     def load_models(self):
         try:
@@ -117,8 +120,7 @@ class DDPG(object):
             self.target_critic.load_state_dict(torch.load('checkpoints/target_critic'), self.device)
             self.actor.load_state_dict(torch.load('checkpoints/actor'), self.device)
             self.target_actor.load_state_dict(torch.load('checkpoints/target_actor'), self.device)
-            self.uniform_action_transitions = 0
-            self.bypass_network_update_transitions = 0
+            self.replay_buffer, self.cur_steps, self.random_noise, self.episode_rewards = torch.load('checkpoints/replay_buffer')
         except:
             pass
 
@@ -130,7 +132,7 @@ class DDPG(object):
         return torch.from_numpy(np.stack(states)).to(self.device).float(), torch.from_numpy(np.stack(actions)).to(self.device).float(), torch.from_numpy(np.stack(rewards).astype(np.float32)).to(self.device), torch.from_numpy(np.stack(next_states)).to(self.device), torch.from_numpy(np.stack(dones)).to(self.device)
 
     def sample_action(self, state):
-        if len(self.replay_buffer) >= self.uniform_action_transitions:
+        if self.cur_steps >= self.uniform_action_transitions:
             state = self.actor(torch.from_numpy(state).float().to(self.device)) + torch.from_numpy(np.array(self.random_noise())).to(self.device)
         else:
             state = torch.distributions.uniform.Uniform(self.low_action_bounds, self.high_action_bounds).sample().to(self.device)
@@ -147,10 +149,8 @@ class DDPG(object):
             t.data.copy_(t.data * (self.tau) + c.data * (1 - self.tau))
 
     def train(self):
-        episode_rewards = []
-        total_steps = 0
         episode_number = 0
-        while total_steps < self.max_steps:
+        while self.cur_steps < self.max_steps:
 
             # Start new episode
             state = self.env.reset().astype(np.float32)
@@ -165,11 +165,12 @@ class DDPG(object):
                 state, reward, done = self.execute_action(state, action)
                 episode_reward += reward
                 episode_steps += 1
+                self.cur_steps += 1
 
                 if episode_steps > 500:
                     done = True
 
-                if len(self.replay_buffer) >= self.bypass_network_update_transitions:
+                if self.cur_steps >= self.bypass_network_update_transitions:
                     # Sample N transitions (minibatch) from replay buffer
                     states, actions, rewards, next_states, dones = self.sample_batch(256)
 
@@ -193,14 +194,14 @@ class DDPG(object):
                     self.update_target(self.target_critic, self.critic)
 
                 if done:
-                    episode_rewards.append(episode_reward / episode_steps)
-                    print(f'Episode {episode_number} had reward: {episode_reward} with replay len: {len(self.replay_buffer)}')
+                    self.episode_rewards.append(episode_reward)
+                    print(f'Episode {episode_number} had reward: {episode_reward} at {self.cur_steps} steps with replay len: {len(self.replay_buffer)}')
 
                     if episode_number % 5 == 0:
                         self.save_models()
-                        plt.plot(episode_rewards)
+                        plt.plot(self.episode_rewards)
                         plt.xlabel('Episode')
-                        plt.ylabel('Episode avg reward')
+                        plt.ylabel('Episode Reward')
                         plt.savefig('reward.png')
                         plt.clf()
 
