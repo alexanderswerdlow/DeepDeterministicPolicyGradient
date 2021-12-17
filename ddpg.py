@@ -6,6 +6,7 @@ import random
 from copy import deepcopy
 import numpy as np
 import matplotlib.pyplot as plt
+from torch.utils.tensorboard import SummaryWriter
 
 # Taken from PyTorch Docs
 # Decreases exploration over time
@@ -103,16 +104,18 @@ class DDPG(object):
         self.replay_buffer = deque(maxlen=1000000)
         self.uniform_action_transitions = 10000
         self.bypass_network_update_transitions = 1000
-        self.max_steps = 2e6
+        self.max_steps = 2e7
         self.cur_steps = 0
         self.episode_rewards = []
+        self.episode_number = 0
+        self.writer = SummaryWriter()
 
     def save_models(self):
         torch.save(self.critic.state_dict(), 'checkpoints/critic')
         torch.save(self.target_critic.state_dict(), 'checkpoints/target_critic')
         torch.save(self.actor.state_dict(), 'checkpoints/actor')
         torch.save(self.target_actor.state_dict(), 'checkpoints/target_actor')
-        torch.save((self.replay_buffer, self.cur_steps, self.random_noise, self.episode_rewards), 'checkpoints/replay_buffer')
+        torch.save((self.replay_buffer, self.cur_steps, self.random_noise, self.episode_rewards, self.episode_number), 'checkpoints/replay_buffer')
 
     def load_models(self):
         try:
@@ -120,9 +123,9 @@ class DDPG(object):
             self.target_critic.load_state_dict(torch.load('checkpoints/target_critic'), self.device)
             self.actor.load_state_dict(torch.load('checkpoints/actor'), self.device)
             self.target_actor.load_state_dict(torch.load('checkpoints/target_actor'), self.device)
-            self.replay_buffer, self.cur_steps, self.random_noise, self.episode_rewards = torch.load('checkpoints/replay_buffer')
+            self.replay_buffer, self.cur_steps, self.random_noise, self.episode_rewards, self.episode_number = torch.load('checkpoints/replay_buffer')
         except:
-            pass
+            print("Failed")
 
     def policy_inference(self, state):
         return self.actor(torch.from_numpy(state).float().to(self.device))
@@ -149,7 +152,7 @@ class DDPG(object):
             t.data.copy_(t.data * (self.tau) + c.data * (1 - self.tau))
 
     def train(self):
-        episode_number = 0
+        
         while self.cur_steps < self.max_steps:
 
             # Start new episode
@@ -164,6 +167,7 @@ class DDPG(object):
                 # Execute Action, Observe Next State, Reward, and Done, and store in replay buffer
                 state, reward, done = self.execute_action(state, action)
                 episode_reward += reward
+                self.writer.add_scalar('Step_Reward/train', reward, self.cur_steps)
                 episode_steps += 1
                 self.cur_steps += 1
 
@@ -195,9 +199,10 @@ class DDPG(object):
 
                 if done:
                     self.episode_rewards.append(episode_reward)
-                    print(f'Episode {episode_number} had reward: {episode_reward} at {self.cur_steps} steps with replay len: {len(self.replay_buffer)}')
+                    print(f'Episode {self.episode_number} had reward: {episode_reward} at {self.cur_steps} steps with replay len: {len(self.replay_buffer)}')
+                    self.writer.add_scalar('Episode_Reward/train', episode_reward, self.episode_number)
 
-                    if episode_number % 10 == 0:
+                    if self.episode_number % 100 == 0:
                         self.save_models()
                         plt.plot(self.episode_rewards)
                         plt.xlabel('Episode')
@@ -205,5 +210,5 @@ class DDPG(object):
                         plt.savefig('reward.png')
                         plt.clf()
 
-                    episode_number += 1
+                    self.episode_number += 1
                     break
