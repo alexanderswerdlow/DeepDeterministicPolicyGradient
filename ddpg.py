@@ -77,15 +77,15 @@ class Critic(nn.Module):
 
 
 class DDPG(object):
-    def __init__(self, env):
+    def __init__(self, env, seed=1):
         self.env = env
         self.n_states = self.env.observation_space.shape[-1]
         self.n_actions = self.env.action_space.shape[-1]
         self.low_action_bounds = torch.from_numpy(self.env.action_space.low).cuda()
         self.high_action_bounds = torch.from_numpy(self.env.action_space.high).cuda()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        torch.manual_seed(1)
-        torch.cuda.manual_seed(1)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
 
         self.actor = Actor(self.n_states, self.n_actions, self.high_action_bounds).to(self.device)
         self.critic = Critic(self.n_states, self.n_actions).to(self.device)

@@ -14,7 +14,8 @@ Before running the project, you’ll need the following installed:
 * [matplotlib](https://pypi.org/project/matplotlib/)
 * [mujoco-py](https://github.com/openai/mujoco-py)
 * [Mujoco](https://mujoco.org/download)
-Once the repository is cloned, run `pip install -e . && pip install scipy` in the root directory to install the "rocket" package which contains the custom rocket enviorment for gym and scipy. This is necessary for the simulations to run.
+
+Once the repository is cloned, run `pip install -e . && pip install scipy gym matplotlib mujoco-py` in the root directory to install the "rocket" package which contains the custom rocket enviorment for gym and scipy. This is necessary for the simulations to run.
 
 You will also need to run the following on Ubuntu: `sudo apt-get install libglew-dev libx11-dev patchelf`
 
@@ -51,3 +52,7 @@ We previously saw that we could find an optimal policy <img alt="\pi^*(s)" src="
 where <img alt="\theta_\pi" src="https://render.githubusercontent.com/render/math?math=%5Ctheta_%5Cpi" style="transform: translateY(20%);" /> denotes the function parameters of the actor specifically.
 
 As discussed in lecture, stability of learning can be improved by computing the bellman value error using an actor and critic that lag behind the current actor and critic. Thus after each new transition we add to our dataset, we compute the aforementioned gradients, update our network parameters with some learning rate, and perform <img alt="\theta_{target} \leftarrow \tau \theta+(1-\tau) \theta_{target}" src="https://render.githubusercontent.com/render/math?math=%5Ctheta_%7Btarget%7D%20%5Cleftarrow%20%5Ctau%20%5Ctheta%2B%281-%5Ctau%29%20%5Ctheta_%7Btarget%7D" style="transform: translateY(20%);" /> where <img alt="\theta" src="https://render.githubusercontent.com/render/math?math=%5Ctheta" style="transform: translateY(20%);" /> parameterizes both the actor and critic.
+
+## Training
+
+![Reward](reward.png)
